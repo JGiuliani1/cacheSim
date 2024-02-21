@@ -1,10 +1,9 @@
-import math
-
 # global variables
-MEM_SIZE = 65600
+MEM_SIZE = 65536
 CACHE_SIZE = 1024
 CACHE_BLOCK_SIZE = 64
 ASSOCIATIVITY = 1
+NUM_SETS = CACHE_SIZE // CACHE_BLOCK_SIZE
 
 
 def logb2(val):
@@ -41,25 +40,35 @@ class Cache:
 
 
 # global cache and memory
-sysCache = Cache(8, ASSOCIATIVITY, CACHE_BLOCK_SIZE)
+sysCache = Cache(NUM_SETS, ASSOCIATIVITY, CACHE_BLOCK_SIZE)
 memory = bytearray(MEM_SIZE)
 
 def main():
     readWord(46916)
 
 def readWord(address):
+    # validate address
+
     # calculate tag, index, and offset
-    numSets = CACHE_SIZE // CACHE_BLOCK_SIZE
-    indexSize = logb2(numSets)
+    indexSize = logb2(NUM_SETS)
     offsetSize = logb2(CACHE_BLOCK_SIZE)
-    tag = (address >> (offsetSize + indexSize)) & (2**(numSets - offsetSize - indexSize) - 1)
+    tag = (address >> (offsetSize + indexSize)) & (2**(NUM_SETS - offsetSize - indexSize) - 1)
     index = (address >> offsetSize) & (2**indexSize - 1)
     offset = address & (2**offsetSize - 1)
     print("tag: ", tag, " index: ", index, " offset: ", offset)
 
-    if sysCache.sets[index].blocks[0].tag == tag:
-        
-    # if in cache: value = memory[address] + 256*memory[address + 1] + 256**2*memory[address + 2] + 256**3*memory[address + 3]
+    for i in range(ASSOCIATIVITY):
+        if sysCache.sets[index].blocks[i].tag == tag and sysCache.sets[index].blocks[i].valid == True:
+            # cache hit
+            sysCache.sets[index].blocks[i].tag = tag
+            sysCache.sets[index].blocks[i].valid = True
+            # update tag queue
+            return memory[address] + 256*memory[address + 1] + 256**2*memory[address + 2] + 256**3*memory[address + 3]
+        else:
+            # cache miss
+            rangeStart = CACHE_BLOCK_SIZE * (address // CACHE_BLOCK_SIZE) - 1
+            rangeEnd = rangeStart + CACHE_BLOCK_SIZE
+            print(rangeStart)
 
 def writeWord(address, word):
     pass
