@@ -1,5 +1,3 @@
-import math
-
 # global variables
 MEM_SIZE = 65536
 CACHE_SIZE = 1024
@@ -9,12 +7,12 @@ NUM_SETS = CACHE_SIZE // CACHE_BLOCK_SIZE
 
 
 def logb2(val):
-    i = 0
-    assert val > 0
-    while val > 0:
-        i = i + 1
-        val = val >> 1
-    return i - 1
+        i = 0
+        assert val > 0
+        while val > 0:
+            i = i + 1
+            val = val >> 1
+        return i - 1
 
 
 # data structures
@@ -47,9 +45,14 @@ memory = bytearray(MEM_SIZE)
 
 def main():
     readWord(46916)
+    readWord(46932)
+    readWord(12936)
+    readWord(13964)
+    readWord(46956)
+    readWord(56132)
+
 
 def readWord(address):
-    assert (checkAllignment(address) == True)
     # validate address
 
     # calculate tag, index, and offset
@@ -58,7 +61,6 @@ def readWord(address):
     tag = (address >> (offsetSize + indexSize)) & (2**(NUM_SETS - offsetSize - indexSize) - 1)
     index = (address >> offsetSize) & (2**indexSize - 1)
     offset = address & (2**offsetSize - 1)
-    print("tag: ", tag, " index: ", index, " offset: ", offset)
 
     for i in range(ASSOCIATIVITY):
         if sysCache.sets[index].blocks[i].tag == tag and sysCache.sets[index].blocks[i].valid == True:
@@ -66,23 +68,25 @@ def readWord(address):
             sysCache.sets[index].blocks[i].tag = tag
             sysCache.sets[index].blocks[i].valid = True
             # update tag queue
+            print("read hit: adress = ", address, " index: ", index, " block index: ", i," tag: ", tag, " offset: ", offset)
             return memory[address] + 256*memory[address + 1] + 256**2*memory[address + 2] + 256**3*memory[address + 3]
         else:
             # cache miss
-            rangeStart = CACHE_BLOCK_SIZE * (address // CACHE_BLOCK_SIZE) - 1
-            rangeEnd = rangeStart + CACHE_BLOCK_SIZE
-            print(rangeStart)
+            rangeStart = CACHE_BLOCK_SIZE * (address // CACHE_BLOCK_SIZE)
+            data = []
+            for j in range(rangeStart, rangeStart + CACHE_BLOCK_SIZE):
+                data.append(memory[j])
+            sysCache.sets[index].blocks[i].data = data
+            sysCache.sets[index].blocks[i].tag = tag
+            sysCache.sets[index].blocks[i].valid = True
+            print("read miss: adress = ", address, " index: ", index, " block index: ", i," tag: ", tag, " offset: ", offset)
+            return memory[address] + 256*memory[address + 1] + 256**2*memory[address + 2] + 256**3*memory[address + 3]
 
 def writeWord(address, word):
     pass
 
 def checkAllignment(address):
-    valid = False
-    memSize = (MEM_SIZE.bit_length() + 7) // 8
-    if memSize > address >= 0:
-        if address % 4 == 0:
-            return True
-    return False
+    pass
 
 
 main()
