@@ -44,7 +44,10 @@ class Cache:
 
 # global cache and memory
 sysCache = Cache(NUM_SETS, ASSOCIATIVITY, CACHE_BLOCK_SIZE)
-memory = bytearray(MEM_SIZE)
+list = []
+for i in range(MEM_SIZE):
+    list.append(i)
+memory = bytearray(list)
 
 
 def main():
@@ -56,11 +59,10 @@ def main():
     readWord(56132)
 
 
-#TODO fix return statement
+#TODO fix return statement - think it's a problem with the way memory is initialized but not entirely sure?
 def readWord(address):
     # validate address
-    # not checkAllignment(address):
-    #    return
+    checkAllignment(address)
 
     # calculate tag, index, and offset
     indexSize = logb2(NUM_SETS)
@@ -105,12 +107,8 @@ def writeWord(address, word):
 
 
 def checkAllignment(address):
-    valid = False
-    memSize = (MEM_SIZE.bit_length() + 7) // 8
-    if memSize > address >= 0:
-        if address % 4 == 0:
-            return True
-    return False
+    assert address + 3 < MEM_SIZE
+    assert address % 4 == 0
 
 
 main()
