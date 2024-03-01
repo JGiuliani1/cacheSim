@@ -56,7 +56,11 @@ def main():
     cache = Cache(NUM_SETS, ASSOCIATIVITY, CACHE_BLOCK_SIZE)
     for i in range(MEM_SIZE // 4):
         word_to_bytes(memory, 4*i, 4*i, WORDLENGTH)
-    print(readWord(1152))
+    readWord(1152)
+    readWord(2176)
+    readWord(3200)
+    readWord(4224)
+    readWord(5248)
 
 
 """def readWord(address):
@@ -97,51 +101,66 @@ def readWord(address):
     # calculate tag, index, and offset
     indexSize = logb2(NUM_SETS)
     offsetSize = logb2(CACHE_BLOCK_SIZE)
-    tag = (address >> (offsetSize + indexSize)) & (2**(NUM_SETS - offsetSize - indexSize) - 1)
+    tag = address >> (cache.index_length + cache.block_offset_length)
+    #tag = (address >> (offsetSize + indexSize)) & (2**(NUM_SETS - offsetSize - indexSize) - 1)
     index = (address >> offsetSize) & (2**indexSize - 1)
     offset = address & (2**offsetSize - 1)
-
     # check if tag is in use in set of blocks - read hit
     for i in range(ASSOCIATIVITY):
-        print(cache.sets[index].blocks[i].tag)
         if cache.sets[index].blocks[i].tag == tag:
             # update tag queue
             # update tag queue - make sure it doesn't overfill
-            if cache.sets[index].tag_queue[0] == -1:
-                cache.sets[index].tag_queue[0] = tag
+            if cache.sets[index].tag_queue[ASSOCIATIVITY - 1] == -1:
+                cache.sets[index].tag_queue[ASSOCIATIVITY - 1] = tag
             else:
-                for x in range(ASSOCIATIVITY - 2, -1, -1):
-                    cache.sets[index].tag_queue[x + 1] = cache.sets[index].tag_queue[x]
-                cache.sets[index].tag_queue[0] = tag
+                for x in range(1, ASSOCIATIVITY, 1):
+                    cache.sets[index].tag_queue[x - 1] = cache.sets[index].tag_queue[x]
+                cache.sets[index].tag_queue[ASSOCIATIVITY - 1] = tag
 
             # set dirty flag to true
             cache.sets[index].blocks[i].dirty = True
 
             #return cache
-            print("read hit: adress = ", address, " index: ", index, " block index: ", i," tag: ", tag, " offset: ", offset)
+            print("read hit: address = ", address, " index: ", index, " block index: ", i," tag: ", tag, " offset: ", offset)
+            print(cache.sets[index].tag_queue)
             return memory[address] + 256*memory[address + 1] + 256**2*memory[address + 2] + 256**3*memory[address + 3]
 
     # check if there are any empty blocks in the set - read miss
     for m in range(ASSOCIATIVITY):
         if cache.sets[index].blocks[m].valid == False:
             # update tag queue
+            if cache.sets[index].tag_queue[ASSOCIATIVITY - 1] == -1:
+                cache.sets[index].tag_queue[ASSOCIATIVITY - 1] = tag
+            else:
+                for x in range(1, ASSOCIATIVITY, 1):
+                    cache.sets[index].tag_queue[x - 1] = cache.sets[index].tag_queue[x]
+                cache.sets[index].tag_queue[ASSOCIATIVITY-1] = tag
+
             cache.sets[index].blocks[m].tag = tag
             cache.sets[index].blocks[m].valid = True
             rangeStart = CACHE_BLOCK_SIZE * (address // CACHE_BLOCK_SIZE)
             for j in range(rangeStart, rangeStart + CACHE_BLOCK_SIZE):
                 cache.sets[index].blocks[m].data.append(memory[j])
-            print("read miss: adress = ", address, " index: ", index, " block index: ", i," tag: ", tag, " offset: ", offset, " range: ", rangeStart, "-", rangeStart + CACHE_BLOCK_SIZE - 1)
+            print("read miss: address = ", address, " index: ", index, " block index: ", i," tag: ", tag, " offset: ", offset, " range: ", rangeStart, "-", rangeStart + CACHE_BLOCK_SIZE - 1)
+            print(cache.sets[index].tag_queue)
             return memory[address] + 256*memory[address + 1] + 256**2*memory[address + 2] + 256**3*memory[address + 3]
 
     # replace least recently used block - read miss + replace
     for n in range(ASSOCIATIVITY): # update for part 2
         # find least recently used block and update tag queue
+        if cache.sets[index].tag_queue[ASSOCIATIVITY - 1] == -1:
+            cache.sets[index].tag_queue[ASSOCIATIVITY - 1] = tag
+        else:
+            for x in range(1, ASSOCIATIVITY, 1):
+                cache.sets[index].tag_queue[x - 1] = cache.sets[index].tag_queue[x]
+            cache.sets[index].tag_queue[ASSOCIATIVITY - 1] = tag
+
         cache.sets[index].blocks[i].tag = tag
         cache.sets[index].blocks[i].valid = True
         rangeStart = CACHE_BLOCK_SIZE * (address // CACHE_BLOCK_SIZE)
         for j in range(rangeStart, rangeStart + CACHE_BLOCK_SIZE):
             cache.sets[index].blocks[i].data.append(memory[j])
-        print("read miss + replace: adress = ", address, " index: ", index, " block index: ", i," tag: ", tag, " offset: ", offset, " new range: ", rangeStart, "-", rangeStart + CACHE_BLOCK_SIZE - 1)
+        print("read miss + replace: address = ", address, " index: ", index, " block index: ", i," tag: ", tag, " offset: ", offset, " new range: ", rangeStart, "-", rangeStart + CACHE_BLOCK_SIZE - 1)
         return memory[address] + 256*memory[address + 1] + 256**2*memory[address + 2] + 256**3*memory[address + 3]
 
 
@@ -174,10 +193,13 @@ def writeWord(address, word):
             # print and write given word
             print("read hit: address = ", address, " index: ", index, " block index: ", i, " tag: ", tag, " offset: ",
                   offset)
-            cache.sets[index].blocks[i].data = (
-                    memory[address] + 256 * memory[address + 1] + 256 ** 2 * memory[address + 2] + 256 ** 3 *
-                    memory[
-                        address + 3])
+            #write given word
+            word_to_bytes(cache.sets[index].blocks[i].data, offset, word, WORDLENGTH)
+
+            #cache.sets[index].blocks[i].data = (
+                    #memory[address] + 256 * memory[address + 1] + 256 ** 2 * memory[address + 2] + 256 ** 3 *
+                    #memory[
+                        #address + 3])
 
     for m in range(ASSOCIATIVITY):
         if cache.sets[index].blocks[m].valid == False:
