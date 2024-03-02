@@ -65,7 +65,6 @@ def main():
     readWord(4224)
     readWord(3200)
 
-
 def readWord(address):
     # validate address
     checkAllignment(address)
@@ -127,6 +126,7 @@ def readWord(address):
         print(f'evict tag {lastUsed} in blockIndex {blockIndex}')
     print(cache.sets[index].tag_queue)
     return memval
+
 
 
 def writeWord(address, word):
