@@ -110,10 +110,18 @@ def readWord(address):
         if not cache.sets[index].blocks[blockIndex].valid:
             print("tag found, block invalid")
             assert cache.sets[index].blocks[blockIndex].valid
-        
+        # update tag queue
+        tagQueueIndex = 0
+        for i in range(ASSOCIATIVITY):
+            if cache.sets[index].tag_queue[i] == tag:
+                tagQueueIndex = i
+        for i in range(tagQueueIndex, ASSOCIATIVITY - 1):
+            cache.sets[index].tag_queue[i] = cache.sets[index].tag_queue[i + 1]
+        cache.sets[index].tag_queue[ASSOCIATIVITY - 1] = tag
         # print output and return value
         memval = bytes_to_word(cache.sets[index].blocks[blockIndex].data, offset, WORDLENGTH)
         print(f'read hit [addr={address} index={index} block_index={blockIndex} tag={tag}: word={memval} ({range_low} - {range_high})]')
+        print(cache.sets[index].tag_queue)
         return memval
     
     # find block that was used the least recently and get its index in the set
@@ -157,7 +165,7 @@ def readWord(address):
     if lastUsed == -1:
         print(f'read miss [addr={address} index={index} block_index={lastUsedIndex} tag={tag}: word={memval} ({range_low} - {range_high})]')
     else:
-        print(f'read miss + replace [addr={address} index={index} block_index={blockIndex} tag={tag}: word={memval} ({range_low} - {range_high})]')
+        print(f'read miss + replace [addr={address} index={index} block_index={lastUsedIndex} tag={tag}: word={memval} ({range_low} - {range_high})]')
         print(f'evict tag {lastUsed} in blockIndex {lastUsedIndex}')
     print(cache.sets[index].tag_queue)
     return memval
