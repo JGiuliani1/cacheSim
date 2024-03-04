@@ -86,6 +86,7 @@ def main():
     readWord(17532)
 
 
+
 def readWord(address):
     # validate address
     checkAllignment(address)
@@ -105,7 +106,7 @@ def readWord(address):
             blockIndex = i
             found = True
 
-    if found:  # read hit
+    if found: # read hit
         if not cache.sets[index].blocks[blockIndex].valid:
             print("tag found, block invalid")
             assert cache.sets[index].blocks[blockIndex].valid
@@ -119,8 +120,7 @@ def readWord(address):
         cache.sets[index].tag_queue[ASSOCIATIVITY - 1] = tag
         # print output and return value
         memval = bytes_to_word(cache.sets[index].blocks[blockIndex].data, offset, WORDLENGTH)
-        print(
-            f'read hit [addr={address} index={index} block_index={blockIndex} tag={tag}: word={memval} ({range_low} - {range_high})]')
+        print(f'read hit [addr={address} index={index} block_index={blockIndex} tag={tag}: word={memval} ({range_low} - {range_high})]')
         print(cache.sets[index].tag_queue)
         print()
         return memval
@@ -143,37 +143,34 @@ def readWord(address):
         A = (cache.sets[index].blocks[lastUsedIndex].tag << (setBits + blockSizeBits)) + (i << blockSizeBits)
         for i in range(CACHE_BLOCK_SIZE):
             memory[A + i] = cache.sets[index].blocks[lastUsedIndex].data[i]
-
+    
     # read in data from memory
     blockStart = (address >> cache.cache_block_size_bits) * CACHE_BLOCK_SIZE
     for i in range(CACHE_BLOCK_SIZE):
         cache.sets[index].blocks[lastUsedIndex].data[i] = memory[blockStart + i]
-
+    
     # change tag, dirty, and valid attributes
     cache.sets[index].blocks[lastUsedIndex].valid = True
     cache.sets[index].blocks[lastUsedIndex].dirty = False
     cache.sets[index].blocks[lastUsedIndex].tag = tag
-
+    
     # update tag queue
     for i in range(0, ASSOCIATIVITY):
         if i == ASSOCIATIVITY - 1:
             cache.sets[index].tag_queue[i] = tag
         else:
             cache.sets[index].tag_queue[i] = cache.sets[index].tag_queue[i + 1]
-
+    
     # print output and return value
     memval = bytes_to_word(cache.sets[index].blocks[lastUsedIndex].data, offset, WORDLENGTH)
     if lastUsed == -1:
-        print(
-            f'read miss [addr={address} index={index} block_index={lastUsedIndex} tag={tag}: word={memval} ({range_low} - {range_high})]')
+        print(f'read miss [addr={address} index={index} block_index={lastUsedIndex} tag={tag}: word={memval} ({range_low} - {range_high})]')
     else:
-        print(
-            f'read miss + replace [addr={address} index={index} tag={tag}: word={memval} ({range_low} - {range_high})]')
+        print(f'read miss + replace [addr={address} index={index} block_index={lastUsedIndex} tag={tag}: word={memval} ({range_low} - {range_high})]')
         print(f'evict tag {lastUsed} in blockIndex {lastUsedIndex}')
     print(cache.sets[index].tag_queue)
     print()
     return memval
-
 
 def writeWord(address, word):
     # validate address
@@ -209,6 +206,9 @@ def writeWord(address, word):
             for x in range(dupe_tag_index, ASSOCIATIVITY, 1):
                 cache.sets[index].tag_queue[x - 1] = cache.sets[index].tag_queue[x]
             cache.sets[index].tag_queue[ASSOCIATIVITY - 1] = tag
+
+        # change dirty flag
+        cache.sets[index].blocks[blockIndex].dirty = True
 
         # memval = bytes_to_word(cache.sets[index].blocks[blockIndex].data, offset, WORDLENGTH)
         print(f'write {word} to memory address {address}; should be a write hit')
@@ -275,6 +275,8 @@ def writeWord(address, word):
         word_to_bytes(memory, address, word, WORDLENGTH)
         print(f'Write-through cache: write {word} to memory[{address}]')
     print()
+
+    return memval
 
 
 def checkAllignment(address):
