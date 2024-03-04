@@ -204,6 +204,9 @@ def writeWord(address, word):
             for x in range(dupe_tag_index, ASSOCIATIVITY, 1):
                 cache.sets[index].tag_queue[x - 1] = cache.sets[index].tag_queue[x]
             cache.sets[index].tag_queue[ASSOCIATIVITY - 1] = tag
+        
+        # change dirty flag
+        cache.sets[index].blocks[blockIndex].dirty = True
 
         # memval = bytes_to_word(cache.sets[index].blocks[blockIndex].data, offset, WORDLENGTH)
         print(f'write {word} to memory address {address}; should be a write hit')
@@ -257,87 +260,21 @@ def writeWord(address, word):
     memval = bytes_to_word(cache.sets[index].blocks[lastUsedIndex].data, offset, WORDLENGTH)
     if lastUsed == -1:
         print(
-            f'write miss [addr={address} index={index} block_index={blockIndex} tag={tag}: word={memval} ({range_low} - {range_high})]')
-        word_to_bytes(cache.sets[index].blocks[blockIndex].data, offset, word, WORDLENGTH)
+            f'write miss [addr={address} index={index} block_index={lastUsedIndex} tag={tag}: word={memval} ({range_low} - {range_high})]')
+        word_to_bytes(cache.sets[index].blocks[lastUsedIndex].data, offset, word, WORDLENGTH)
     else:
         print(
-            f'write miss + replace [addr={address} index={index} block_index={blockIndex} tag={tag}: word={memval} ({range_low} - {range_high})]')
-        print(f'evict tag {lastUsed} in blockIndex {blockIndex}')
+            f'write miss + replace [addr={address} index={index} block_index={lastUsedIndex} tag={tag}: word={memval} ({range_low} - {range_high})]')
+        print(f'evict tag {lastUsed} in blockIndex {lastUsedIndex}')
         print(f'read in {range_low}-{range_high}')
-        word_to_bytes(cache.sets[index].blocks[blockIndex].data, offset, word, WORDLENGTH)
+        word_to_bytes(cache.sets[index].blocks[lastUsedIndex].data, offset, word, WORDLENGTH)
     print(cache.sets[index].tag_queue)
     if WRITE_THRU:
         word_to_bytes(memory, offset, word, WORDLENGTH)
         print(f'Write-through cache: write {word} to memory[{address}]')
     print()
 
-
-"""
-
-
-def writeWord(address, word):
-    pass
-    # validate address
-    checkAllignment(address)
-
-    # calculate tag, index, and offset
-    indexSize = logb2(NUM_SETS)
-    offsetSize = logb2(CACHE_BLOCK_SIZE)
-    tag = address >> (cache.index_length + cache.block_offset_length)
-    index = (address >> offsetSize) & (2 ** indexSize - 1)
-    offset = address & (2 ** offsetSize - 1)
-
-    # check if tag is in use in set of blocks - read hit
-    for i in range(ASSOCIATIVITY):
-        if cache.sets[index].blocks[i].tag == tag:
-            # update tag queue - make sure it doesn't overfill
-            if cache.sets[index].tag_queue[ASSOCIATIVITY - 1] == -1:
-                cache.sets[index].tag_queue[ASSOCIATIVITY - 1] = tag
-            else:
-                for x in range(1, ASSOCIATIVITY, 1):
-                    cache.sets[index].tag_queue[x - 1] = cache.sets[index].tag_queue[x]
-                cache.sets[index].tag_queue[ASSOCIATIVITY - 1] = tag
-
-            # set dirty flag to true
-            cache.sets[index].blocks[i].dirty = True
-
-            # print and write given word
-            print("write hit: address = ", address, " index: ", index, " block index: ", i, " tag: ", tag, " offset: ",
-                  offset)
-            print(cache.sets[index].tag_queue)
-            print()
-            # write given word
-            word_to_bytes(cache.sets[index].blocks[i].data, offset, word, WORDLENGTH)
-
-            # write-back cache also writes to memory as well
-            if WRITE_THRU:
-                word_to_bytes(memory, offset, word, WORDLENGTH)
-            # cache.sets[index].blocks[i].data = (
-            # memory[address] + 256 * memory[address + 1] + 256 ** 2 * memory[address + 2] + 256 ** 3 *
-            # memory[
-            # address + 3])
-
-    for m in range(ASSOCIATIVITY):
-        if cache.sets[index].blocks[m].valid == False:
-            # update tag queue
-            if cache.sets[index].tag_queue[ASSOCIATIVITY - 1] == -1:
-                cache.sets[index].tag_queue[ASSOCIATIVITY - 1] = tag
-            else:
-                for x in range(1, ASSOCIATIVITY, 1):
-                    cache.sets[index].tag_queue[x - 1] = cache.sets[index].tag_queue[x]
-                cache.sets[index].tag_queue[ASSOCIATIVITY - 1] = tag
-
-            cache.sets[index].blocks[m].tag = tag
-            cache.sets[index].blocks[m].valid = True
-            rangeStart = CACHE_BLOCK_SIZE * (address // CACHE_BLOCK_SIZE)
-            for j in range(rangeStart, rangeStart + CACHE_BLOCK_SIZE):
-                cache.sets[index].blocks[m].data.append(memory[j])
-            print("read miss: address = ", address, " index: ", index, " block index: ", i, " tag: ", tag, " offset: ",
-                  offset, " range: ", rangeStart, "-", rangeStart + CACHE_BLOCK_SIZE - 1)
-            print(cache.sets[index].tag_queue)
-            return memory[address] + 256 * memory[address + 1] + 256 ** 2 * memory[address + 2] + 256 ** 3 * memory[
-                address + 3]
-"""
+    return memval
 
 
 def checkAllignment(address):
